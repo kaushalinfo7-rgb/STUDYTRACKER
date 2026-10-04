@@ -351,5 +351,162 @@ window.save=function(){localStorage.setItem('kaushalStudyFocusV1',JSON.stringify
 window.addEventListener('online',()=>cloudPull());
 window.addEventListener('load',()=>setTimeout(cloudPull,700));
 </script>
+
+<!-- ===== KAUSHAL REVISION NOTES (PDF) ADD-ON =====
+PASTE THIS WHOLE BLOCK right before </body> — AFTER the "CLOUD SYNC PATCH" script. Nothing else needs editing. -->
+<style>
+.notebtn{margin-left:auto;background:#f3f4f6;color:#374151;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:800;white-space:nowrap}
+.notebtn.has{background:#dcfce7;color:#166534}
+.ntag{background:#ecfdf5!important;color:#047857!important}
+.nmodal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9000;display:none;align-items:center;justify-content:center;padding:14px}
+.nmodal.on{display:flex}
+.nbox{background:#fff;border-radius:20px;padding:18px;width:min(560px,100%);max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.nrow{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #e5e7eb}
+.ninfo{flex:1;min-width:0}.ninfo b{display:block;font-size:14px;overflow-wrap:anywhere}.ninfo small{color:#6b7280}
+.nrow a.btn{text-decoration:none}
+</style>
+<div id="notesModal" class="nmodal" onclick="if(event.target===this)closeNotes()">
+ <div class="nbox">
+  <div class="sectionhead">
+   <div><h2 id="nTitle" style="margin:0"></h2><div id="nCrumb" class="meta"></div></div>
+   <button class="btn" onclick="closeNotes()">✕</button>
+  </div>
+  <div id="nList"></div>
+  <div id="nStatus" class="meta" style="margin:10px 0;min-height:18px"></div>
+  <button id="nUp" class="btn primary" onclick="document.getElementById('nFile').click()">＋ Add PDF notes</button>
+  <input id="nFile" type="file" accept="application/pdf,.pdf" multiple hidden onchange="uploadNotes(event)">
+ </div>
+</div>
+
+<script>
+/* ---------- helpers ---------- */
+const NOTE_BUCKET='revision-notes',NKEY='kaushalStudyFocusV1';
+let noteTid=null;
+const nl=()=>(data.notes=data.notes||{});
+const noteCount=tid=>(nl()[tid]||[]).length;
+const persist=()=>localStorage.setItem(NKEY,JSON.stringify(data));
+const stH=()=>({apikey:KAUSHAL_CLOUD.key,Authorization:'Bearer '+KAUSHAL_CLOUD.key});
+const storageUrl=p=>KAUSHAL_CLOUD.url+'/storage/v1/object/'+NOTE_BUCKET+'/'+p;
+const noteUrl=p=>KAUSHAL_CLOUD.url+'/storage/v1/object/public/'+NOTE_BUCKET+'/'+p;
+const fmtSize=b=>b>1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+
+/* ---------- sync fixes ---------- */
+// Supabase returns an empty body on 201 — r.json() would throw and break every sync.
+cloudFetch=async function(path,opts={}){
+ const r=await fetch(KAUSHAL_CLOUD.url+'/rest/v1/'+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});
+ if(!r.ok)throw new Error(await r.text());
+ const tx=await r.text();return tx?JSON.parse(tx):null;
+};
+// Fixed push: valid next_revision_at, no duplicate revision rows, un-ticked topics sync too.
+cloudPush=async function(){
+ if(cloudBusy)return;cloudBusy=true;
+ try{
+  cloudStatus('☁ Saving to cloud…');
+  const now=new Date().toISOString();
+  const rows=Object.entries(data.completed||{}).map(([topic_id,v])=>({topic_id,completed:true,completed_at:new Date(v.at||Date.now()).toISOString(),updated_at:now}));
+  (data.removed||[]).forEach(topic_id=>rows.push({topic_id,completed:false,completed_at:null,updated_at:now}));
+  if(rows.length)await cloudFetch('topic_progress?on_conflict=topic_id',{method:'POST',body:JSON.stringify(rows)});
+  data.removed=[];
+  const pend=Object.values(data.revisions||{}).length?Object.entries(data.revisions).filter(([k,v])=>!v.synced):[];
+  if(pend.length){
+   await cloudFetch('revision_history',{method:'POST',body:JSON.stringify(pend.map(([topic_id,v])=>({topic_id,revised_at:new Date(v.at||Date.now()).toISOString(),next_revision_at:new Date(addDays(v.date||today(),10)+'T12:00:00').toISOString()})))});
+   pend.forEach(([k,v])=>v.synced=true);
+  }
+  const d=today();
+  const tc=Object.values(data.completed||{}).filter(v=>v.date===d).length;
+  const rc=Object.values(data.revisions||{}).filter(v=>v.date===d).length;
+  await cloudFetch('daily_activity?on_conflict=activity_date',{method:'POST',body:JSON.stringify([{activity_date:d,topics_covered:tc,revisions_completed:rc,total_focus_minutes:rc*10,updated_at:now}])});
+  persist();cloudStatus('✓ Cloud synced','ok');
+ }catch(e){console.warn('Cloud sync:',e);cloudStatus('Cloud unavailable • saved locally','bad')}
+ finally{cloudBusy=false}
+};
+// remember un-ticked topics so they can be pushed
+const _tt=toggleTopic;
+toggleTopic=function(tid){
+ const was=!!data.completed[tid];_tt(tid);
+ if(was)(data.removed=data.removed||[]).push(tid);
+ else if(data.removed)data.removed=data.removed.filter(x=>x!==tid);
+};
+// pulled revisions are already in the cloud
+const _cp=cloudPull;
+cloudPull=async function(){await _cp();Object.values(data.revisions||{}).forEach(v=>{if(v.next)v.synced=true});persist();};
+
+/* ---------- tree decoration: 📄 button per topic + note counts per group ---------- */
+const _rt=renderTree;
+renderTree=function(){
+ const el=document.getElementById('tree');
+ const open=[...el.querySelectorAll('details')].map(d=>d.open);
+ _rt();
+ el.querySelectorAll('.topic').forEach(row=>{
+  const m=(row.querySelector('input').getAttribute('onchange')||'').match(/'([^']+)'/);if(!m)return;
+  const n=noteCount(m[1]);row.dataset.n=n;
+  row.insertAdjacentHTML('beforeend',`<button class="notebtn ${n?'has':''}" onclick="openNotes('${m[1]}')" title="Revision notes (PDF)">📄 ${n||'+'}</button>`);
+ });
+ el.querySelectorAll('.node > details').forEach(g=>{
+  const n=[...g.querySelectorAll('.topic')].reduce((a,r)=>a+(+r.dataset.n||0),0);
+  if(n)g.querySelector('summary').insertAdjacentHTML('beforeend',`<span class="tag ntag">📄 ${n}</span>`);
+ });
+ if(!document.getElementById('search').value.trim())el.querySelectorAll('details').forEach((d,i)=>{if(open[i])d.open=true});
+};
+
+/* ---------- modal ---------- */
+function openNotes(tid){noteTid=tid;document.getElementById('notesModal').classList.add('on');renderNotes()}
+function closeNotes(){document.getElementById('notesModal').classList.remove('on');noteTid=null}
+function renderNotes(){
+ const t=TOPICS.find(x=>x.id===noteTid);if(!t)return;
+ document.getElementById('nTitle').textContent=t.name;
+ document.getElementById('nCrumb').textContent=t.subject+' › '+t.group;
+ const a=nl()[noteTid]||[];
+ document.getElementById('nList').innerHTML=a.length?a.map(n=>`<div class="nrow"><div class="ninfo"><b>📄 ${esc(n.name)}</b><small>${fmtSize(n.size)} • ${fmtDate((n.at||'').slice(0,10)||today())}</small></div><a class="btn" href="${noteUrl(n.path)}" target="_blank" rel="noopener">Open</a><button class="btn danger" onclick="delNote('${n.id}')">✕</button></div>`).join(''):'<div class="empty">No PDF notes for this topic yet.</div>';
+}
+const setBusy=(b,m)=>{document.getElementById('nStatus').textContent=m||'';document.getElementById('nUp').disabled=b};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNotes()});
+
+/* ---------- upload / delete ---------- */
+async function uploadNotes(ev){
+ const files=[...ev.target.files];ev.target.value='';
+ const t=TOPICS.find(x=>x.id===noteTid);if(!t)return;
+ for(const f of files){
+  if(!/\.pdf$/i.test(f.name)&&f.type!=='application/pdf'){toast('Only PDF files are allowed');continue}
+  if(f.size>50*1048576){toast(f.name+' is over 50 MB');continue}
+  const nid=crypto.randomUUID(),path=t.id+'/'+nid.slice(0,8)+'-'+f.name.replace(/[^A-Za-z0-9._-]+/g,'_');
+  setBusy(true,'Uploading '+f.name+'…');
+  try{
+   const r=await fetch(storageUrl(path),{method:'POST',headers:{...stH(),'Content-Type':'application/pdf'},body:f});
+   if(!r.ok)throw new Error(await r.text());
+   await cloudFetch('revision_notes',{method:'POST',body:JSON.stringify([{id:nid,topic_id:t.id,subject:t.subject,group_name:t.group,topic_name:t.name,file_name:f.name,storage_path:path,size_bytes:f.size}])});
+   (nl()[t.id]=nl()[t.id]||[]).push({id:nid,name:f.name,path,size:f.size,at:new Date().toISOString()});
+   persist();renderTree();renderNotes();toast('✓ Note uploaded & synced');
+  }catch(e){console.warn('Upload:',e);toast('Upload failed — run the SQL setup first')}
+ }
+ setBusy(false);
+}
+async function delNote(nid){
+ const a=nl()[noteTid]||[],n=a.find(x=>x.id===nid);
+ if(!n||!confirm('Delete "'+n.name+'" from all devices?'))return;
+ try{
+  const r=await fetch(storageUrl(n.path),{method:'DELETE',headers:stH()});
+  if(!r.ok)throw new Error(await r.text());
+  await cloudFetch('revision_notes?id=eq.'+nid,{method:'DELETE'});
+  nl()[noteTid]=a.filter(x=>x.id!==nid);persist();renderTree();renderNotes();toast('Note deleted');
+ }catch(e){console.warn('Delete:',e);toast('Delete failed')}
+}
+
+/* ---------- pull note list from cloud ---------- */
+async function pullNotes(){
+ try{
+  const rows=await cloudFetch('revision_notes?select=id,topic_id,file_name,storage_path,size_bytes,created_at&order=created_at.asc');
+  if(!Array.isArray(rows))return;
+  const m={};
+  rows.forEach(r=>(m[r.topic_id]=m[r.topic_id]||[]).push({id:r.id,name:r.file_name,path:r.storage_path,size:r.size_bytes||0,at:r.created_at}));
+  data.notes=m;persist();renderTree();if(noteTid)renderNotes();
+ }catch(e){console.warn('Notes pull:',e)}
+}
+window.addEventListener('online',pullNotes);
+window.addEventListener('load',()=>setTimeout(pullNotes,1500));
+renderTree(); // decorate the tree that was already rendered
+</script>
+<!-- ===== END ADD-ON ===== -->
+
 </body>
 </html>
