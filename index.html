@@ -50,7 +50,7 @@ button,input,select{font:inherit}button{cursor:pointer;border:0}
 
  <section class="hero">
   <h1>Study. Track. Revise.</h1>
-  <p>Your distraction-resistant CGPSC study dashboard. Tick topics as you cover them, then use the 10-minute revision lottery to keep older topics alive.</p>
+  <p>Your distraction-resistant CGPSC study dashboard. Tick topics as you cover them, then use the 15-minute revision lottery to keep older topics alive.</p>
   <div style="margin-top:17px;max-width:520px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Overall syllabus coverage</span><b id="heroPct">0%</b></div><div class="progress" style="background:rgba(255,255,255,.18)"><i id="heroBar" style="width:0%;background:#fff"></i></div></div>
  </section>
 
@@ -71,12 +71,12 @@ button,input,select{font:inherit}button{cursor:pointer;border:0}
   <aside>
    <section class="card lottery">
     <div class="emoji">🎟️</div>
-    <h2>10-Minute Revision Lottery</h2>
+    <h2>15-Minute Revision Lottery</h2>
     <div id="pick" class="picked">Ready when you are</div>
     <div id="pickMeta" class="meta">Eligible topics are selected randomly.</div>
     <div id="cooldown" class="cool"></div>
     <button class="btn primary" style="margin-top:15px" onclick="drawTopic()">🎲 Draw Random Topic</button>
-    <button class="btn" id="focusBtn" style="margin-top:5px" onclick="startFocus()">🔒 Start 10-Min Focus</button>
+    <button class="btn" id="focusBtn" style="margin-top:5px" onclick="startFocus()">🔒 Start 15-Min Focus</button>
    </section>
 
    <section class="card" style="margin-top:15px">
@@ -96,7 +96,7 @@ button,input,select{font:inherit}button{cursor:pointer;border:0}
  <div class="focusbox">
   <div style="font-size:14px;letter-spacing:2px;color:#9ca3af">STRICT STUDY FOCUS</div>
   <h1 id="focusTopic">Revision</h1>
-  <div class="focusTimer" id="focusTimer">10:00</div>
+  <div class="focusTimer" id="focusTimer">15:00</div>
   <p>Stay on this screen until the timer ends. Switching tabs will trigger a warning and pause the session.</p>
   <button class="btn primary" onclick="finishFocus()">✓ Complete Revision</button>
   <button class="btn" onclick="exitFocus()">Exit</button>
@@ -231,12 +231,12 @@ function drawTopic(){
  data.current=t.id;save();
  document.getElementById("pick").textContent=t.name;
  document.getElementById("pickMeta").textContent=`${t.subject} • ${t.group}`;
- document.getElementById("cooldown").textContent="Complete the 10-minute focus to start its 10-day revision cooldown.";
+ document.getElementById("cooldown").textContent="Complete the 15-minute focus to start its 10-day revision cooldown.";
 }
 function startFocus(){
  if(!data.current){drawTopic(); if(!data.current)return}
  const t=TOPICS.find(x=>x.id===data.current); if(!t)return;
- focusTopicId=t.id;focusSeconds=600;hidden=false;
+ focusTopicId=t.id;focusSeconds=900;hidden=false;
  document.getElementById("focusTopic").textContent=t.name;
  document.getElementById("focus").classList.add("on");
  document.getElementById("focus").setAttribute("aria-hidden","false");
@@ -253,7 +253,7 @@ function finishFocus(auto=false){
  data.activity.unshift({type:"revision",tid,date:today(),at:Date.now()});
  data.current=null;focusTopicId=null;save();
  document.getElementById("focus").classList.remove("on");
- toast(auto?"🎉 10-minute revision completed!":"✓ Revision completed");
+ toast(auto?"🎉 15-minute revision completed!":"✓ Revision completed");
  renderAll();
 }
 function exitFocus(){
@@ -305,56 +305,29 @@ const KAUSHAL_CLOUD={
  key:'sb_publishable_zQcr8lTMQnzwyEw5DN4j-w_kdoJfYQj'
 };
 let cloudTimer=null,cloudBusy=false;
-function cloudHeaders(){return {'apikey':KAUSHAL_CLOUD.key,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}}
-async function cloudFetch(path,opts={}){
- const r=await fetch(KAUSHAL_CLOUD.url+'/rest/v1/'+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});
- if(!r.ok) throw new Error(await r.text());
- return r.status===204?null:r.json();
-}
+function cloudHeaders(){return {'apikey':KAUSHAL_CLOUD.key, 'Authorization':'Bearer ' + KAUSHAL_CLOUD.key, 'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}}
+
 function cloudStatus(text,kind=''){
  let e=document.getElementById('cloudStatus');
  if(!e){e=document.createElement('div');e.id='cloudStatus';e.style.cssText='position:fixed;right:14px;bottom:14px;z-index:9998;background:#111827;color:#fff;padding:9px 12px;border-radius:10px;font:12px system-ui;box-shadow:0 8px 25px #0003';document.body.appendChild(e)}
  e.textContent=text;e.style.background=kind==='ok'?'#047857':kind==='bad'?'#991b1b':'#111827';
- clearTimeout(window.cloudHide);window.cloudHide=setTimeout(()=>e.style.display='none',2200);e.style.display='block';
+ clearTimeout(window.cloudHide);window.cloudHide=setTimeout(()=>e.style.display='none',3000);e.style.display='block';
 }
-async function cloudPush(){
- if(cloudBusy)return; cloudBusy=true;
- try{
-  cloudStatus('☁ Saving to cloud…');
-  const completed=Object.entries(data.completed||{}).map(([topic_id,v])=>({topic_id,completed:true,completed_at:new Date(v.at||Date.now()).toISOString(),updated_at:new Date().toISOString()}));
-  if(completed.length) await cloudFetch('topic_progress?on_conflict=topic_id',{method:'POST',body:JSON.stringify(completed)});
-  const revisions=Object.entries(data.revisions||{}).map(([topic_id,v])=>({topic_id,revised_at:new Date(v.at||Date.now()).toISOString(),next_revision_at:new Date(v.next).toISOString()}));
-  if(revisions.length) await cloudFetch('revision_history',{method:'POST',body:JSON.stringify(revisions)});
-  const d=new Date().toISOString().slice(0,10);
-  const topics=Object.values(data.completed||{}).filter(v=>v.date===d).length;
-  const revisionsToday=Object.values(data.revisions||{}).filter(v=>v.date===d).length;
-  await cloudFetch('daily_activity?on_conflict=activity_date',{method:'POST',body:JSON.stringify([{activity_date:d,topics_covered:topics,revisions_completed:revisionsToday,total_focus_minutes:revisionsToday*10,updated_at:new Date().toISOString()}])});
-  cloudStatus('✓ Cloud synced','ok');
- }catch(e){console.warn('Cloud sync:',e);cloudStatus('Cloud unavailable • saved locally','bad')}
- finally{cloudBusy=false}
+
+// CACHE BUSTED FETCH
+async function cloudFetch(path,opts={}){
+ const u=new URL(KAUSHAL_CLOUD.url+'/rest/v1/'+path);
+ // Rely on 'no-store' instead of URL params to avoid PostgREST filter errors
+ const r=await fetch(u.toString(),{...opts, cache:'no-store', headers:{...cloudHeaders(),...(opts.headers||{})}});
+ if(!r.ok) throw new Error(await r.text());
+ const tx=await r.text();return tx?JSON.parse(tx):null;
 }
-function scheduleCloud(){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudPush,900)}
-async function cloudPull(){
- try{
-  cloudStatus('☁ Syncing…');
-  const p=await cloudFetch('topic_progress?select=topic_id,completed,completed_at,updated_at');
-  const r=await cloudFetch('revision_history?select=topic_id,revised_at,next_revision_at&order=revised_at.desc');
-  if(Array.isArray(p))p.forEach(x=>{if(x.completed)data.completed[x.topic_id]={date:(x.completed_at||'').slice(0,10),at:x.updated_at||new Date().toISOString()};else delete data.completed[x.topic_id]});
-  if(Array.isArray(r)){const latest={};r.forEach(x=>{if(!latest[x.topic_id])latest[x.topic_id]=x});Object.entries(latest).forEach(([id,x])=>{data.revisions[id]={date:(x.revised_at||'').slice(0,10),at:x.revised_at,next:x.next_revision_at}})}
-  localStorage.setItem('kaushalStudyFocusV1',JSON.stringify(data));
-  if(typeof renderAll==='function')renderAll();
-  cloudStatus('✓ Cloud loaded','ok');
- }catch(e){console.warn('Cloud pull:',e);cloudStatus('Cloud unavailable • local mode','bad')}
-}
-// Replace the existing local-only save function with local save + deferred cloud sync.
+
+function scheduleCloud(){clearTimeout(cloudTimer);cloudTimer=setTimeout(window.cloudSync||(()=>{}),900)}
 window.save=function(){localStorage.setItem('kaushalStudyFocusV1',JSON.stringify(data));scheduleCloud()};
-window.addEventListener('online',()=>cloudPull());
-window.addEventListener('load',()=>setTimeout(cloudPull,700));
 </script>
 
-<!-- ===== KAUSHAL REVISION NOTES (GOOGLE DRIVE) ADD-ON =====
-REPLACE the old block (from "KAUSHAL REVISION NOTES (PDF) ADD-ON" down to "END ADD-ON") with this whole file's contents.
-Keep it right before </body>, after the CLOUD SYNC PATCH script. Nothing else needs editing. -->
+<!-- ===== KAUSHAL REVISION NOTES (GOOGLE DRIVE) ADD-ON ===== -->
 <style>
 .notebtn{margin-left:auto;background:#f3f4f6;color:#374151;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:800;white-space:nowrap}
 .notebtn.has{background:#dcfce7;color:#166534}
@@ -364,17 +337,14 @@ Keep it right before </body>, after the CLOUD SYNC PATCH script. Nothing else ne
 .nbox{background:#fff;border-radius:20px;padding:18px;width:min(560px,100%);max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .nrow{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #e5e7eb}
 .ninfo{flex:1;min-width:0}.ninfo b{display:block;font-size:14px;overflow-wrap:anywhere}.ninfo small{color:#6b7280}
-/* in-app PDF viewer */
 .pv{position:fixed;inset:0;z-index:9500;background:#080b13;display:none;flex-direction:column}
 .pv.on{display:flex}
 .pvbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));color:#fff}
 .pvbar b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pvwrap{position:relative;flex:1;min-height:0;border-radius:14px;overflow:hidden;background:#fff;margin:0 10px 10px}
 .pvwrap iframe{width:100%;height:100%;border:0;display:block}
-.pvblock{position:absolute;top:0;right:0;width:64px;height:60px} /* swallows Drive's "open in new tab" icon */
-/* lottery card */
+.pvblock{position:absolute;top:0;right:0;width:64px;height:60px} 
 .pickdocs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
-/* focus mode with a PDF */
 .focus.hasdoc{align-items:stretch;padding:10px}
 .focus.hasdoc .focusbox{width:100%;height:100%;display:flex;flex-direction:column}
 .focus.hasdoc h1{font-size:clamp(18px,3.5vw,26px)}
@@ -409,18 +379,16 @@ Keep it right before </body>, after the CLOUD SYNC PATCH script. Nothing else ne
 </div>
 
 <script>
-/* ---------- helpers ---------- */
-const NOTE_BUCKET='revision-notes',NKEY='kaushalStudyFocusV1',FOCUS_SECONDS=900;
+const NOTE_BUCKET='revision-notes',NKEY='kaushalStudyFocusV1';
 let noteTid=null,fdTid=null;
 const nl=()=>(data.notes=data.notes||{});
 const noteCount=tid=>(nl()[tid]||[]).length;
 const persist=()=>localStorage.setItem(NKEY,JSON.stringify(data));
-const noteUrl=p=>KAUSHAL_CLOUD.url+'/storage/v1/object/public/'+NOTE_BUCKET+'/'+p; // old uploaded files still open
+const noteUrl=p=>KAUSHAL_CLOUD.url+'/storage/v1/object/public/'+NOTE_BUCKET+'/'+p; 
 const driveId=u=>{u=(u||'').trim();const m=u.match(/\/d\/([\w-]{15,})/)||u.match(/[?&]id=([\w-]{15,})/);return m?m[1]:(/^[\w-]{25,}$/.test(u)?u:null)};
 const docSrc=n=>n.path.includes('/')?noteUrl(n.path):'https://drive.google.com/file/d/'+n.path+'/preview';
 const nMsg=m=>document.getElementById('nStatus').textContent=m;
 
-/* ---------- 15-minute focus + label updates ---------- */
 (function(){
  const q=s=>document.querySelector(s);
  const h=q('.lottery h2');if(h)h.textContent='15-Minute Revision Lottery';
@@ -430,44 +398,6 @@ const nMsg=m=>document.getElementById('nStatus').textContent=m;
 })();
 const _toast=toast;toast=function(s){_toast(String(s).replace('10-minute','15-minute'))};
 
-/* ---------- sync fixes (unchanged, minutes now 15 per revision) ---------- */
-cloudFetch=async function(path,opts={}){
- const r=await fetch(KAUSHAL_CLOUD.url+'/rest/v1/'+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});
- if(!r.ok)throw new Error(await r.text());
- const tx=await r.text();return tx?JSON.parse(tx):null;
-};
-cloudPush=async function(){
- if(cloudBusy)return;cloudBusy=true;
- try{
-  cloudStatus('☁ Saving to cloud…');
-  const now=new Date().toISOString();
-  const rows=Object.entries(data.completed||{}).map(([topic_id,v])=>({topic_id,completed:true,completed_at:new Date(v.at||Date.now()).toISOString(),updated_at:now}));
-  (data.removed||[]).forEach(topic_id=>rows.push({topic_id,completed:false,completed_at:null,updated_at:now}));
-  if(rows.length)await cloudFetch('topic_progress?on_conflict=topic_id',{method:'POST',body:JSON.stringify(rows)});
-  data.removed=[];
-  const pend=Object.entries(data.revisions||{}).filter(([k,v])=>!v.synced);
-  if(pend.length){
-   await cloudFetch('revision_history',{method:'POST',body:JSON.stringify(pend.map(([topic_id,v])=>({topic_id,revised_at:new Date(v.at||Date.now()).toISOString(),next_revision_at:new Date(addDays(v.date||today(),10)+'T12:00:00').toISOString()})))});
-   pend.forEach(([k,v])=>v.synced=true);
-  }
-  const d=today();
-  const tc=Object.values(data.completed||{}).filter(v=>v.date===d).length;
-  const rc=Object.values(data.revisions||{}).filter(v=>v.date===d).length;
-  await cloudFetch('daily_activity?on_conflict=activity_date',{method:'POST',body:JSON.stringify([{activity_date:d,topics_covered:tc,revisions_completed:rc,total_focus_minutes:rc*15,updated_at:now}])});
-  persist();cloudStatus('✓ Cloud synced','ok');
- }catch(e){console.warn('Cloud sync:',e);cloudStatus('Cloud unavailable • saved locally','bad')}
- finally{cloudBusy=false}
-};
-const _tt=toggleTopic;
-toggleTopic=function(tid){
- const was=!!data.completed[tid];_tt(tid);
- if(was)(data.removed=data.removed||[]).push(tid);
- else if(data.removed)data.removed=data.removed.filter(x=>x!==tid);
-};
-const _cp=cloudPull;
-cloudPull=async function(){await _cp();Object.values(data.revisions||{}).forEach(v=>{if(v.next)v.synced=true});persist();};
-
-/* ---------- tree decoration: 📄 button per topic + counts per group ---------- */
 const _rt=renderTree;
 renderTree=function(){
  const el=document.getElementById('tree');
@@ -485,7 +415,6 @@ renderTree=function(){
  if(!document.getElementById('search').value.trim())el.querySelectorAll('details').forEach((d,i)=>{if(open[i])d.open=true});
 };
 
-/* ---------- link manager ---------- */
 function openNotes(tid){noteTid=tid;nMsg('In Drive: Share → General access → “Anyone with the link” (Viewer), so it can load here.');document.getElementById('notesModal').classList.add('on');renderNotes()}
 function closeNotes(){document.getElementById('notesModal').classList.remove('on');noteTid=null}
 function renderNotes(){
@@ -510,14 +439,6 @@ async function addNote(){
   delete note.unsynced;persist();
  }catch(e){console.warn('Link sync:',e)}
 }
-async function delNote(nid){
- const a=nl()[noteTid]||[],n=a.find(x=>x.id===nid);
- if(!n||!confirm('Remove "'+n.name+'" from this topic on all devices? (Your Drive file is not deleted.)'))return;
- nl()[noteTid]=a.filter(x=>x.id!==nid);persist();renderTree();renderNotes();renderPickDocs();
- try{await cloudFetch('revision_notes?id=eq.'+nid,{method:'DELETE'})}catch(e){console.warn('Delete:',e)}
-}
-
-/* ---------- in-app viewer ---------- */
 function openViewer(nid,tid){
  const n=(nl()[tid]||[]).find(x=>x.id===nid);if(!n)return;
  document.getElementById('pvTitle').textContent=n.name;
@@ -527,7 +448,6 @@ function openViewer(nid,tid){
 function closeViewer(){document.getElementById('pdfViewer').classList.remove('on');document.getElementById('pvFrame').src='about:blank'}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('pdfViewer').classList.contains('on'))closeViewer();else closeNotes()}});
 
-/* ---------- lottery: show the topic's PDFs under the draw ---------- */
 function renderPickDocs(){
  let el=document.getElementById('pickDocs');
  if(!el){el=document.createElement('div');el.id='pickDocs';el.className='pickdocs';document.getElementById('cooldown').insertAdjacentElement('afterend',el)}
@@ -539,13 +459,8 @@ function renderPickDocs(){
   :`<button class="btn" onclick="openNotes('${tid}')">＋ Link a PDF for this topic</button>`;
 }
 const _dt=drawTopic;
-drawTopic=function(){
- _dt();
- const c=document.getElementById('cooldown');c.textContent=c.textContent.replace('10-minute','15-minute');
- renderPickDocs();
-};
+drawTopic=function(){_dt();const c=document.getElementById('cooldown');c.textContent=c.textContent.replace('10-minute','15-minute');renderPickDocs();};
 
-/* ---------- focus mode: 15 min + the same PDF embedded ---------- */
 function showFocusDoc(i){
  const n=(nl()[fdTid]||[])[i];if(!n)return;
  document.getElementById('fdFrame').src=docSrc(n);
@@ -562,48 +477,21 @@ function mountFocusDoc(tid){
  d.innerHTML=(a.length>1?'<div class="ftabs">'+a.map((n,i)=>`<button class="btn" onclick="showFocusDoc(${i})">${esc(n.name)}</button>`).join('')+'</div>':'')+'<div class="pvwrap"><iframe id="fdFrame" title="Revision PDF"></iframe><div class="pvblock"></div></div>';
  box.appendChild(d);f.classList.add('hasdoc');showFocusDoc(0);
 }
-function unmountFocusDoc(){
- const d=document.getElementById('focusDoc');if(d)d.remove();
- document.getElementById('focus').classList.remove('hasdoc');
-}
-const _sf=startFocus;
-startFocus=function(){
- _sf();
- if(!focusTopicId)return;
- focusSeconds=FOCUS_SECONDS;renderFocusTimer(); // 15:00
- mountFocusDoc(focusTopicId);
-};
+function unmountFocusDoc(){const d=document.getElementById('focusDoc');if(d)d.remove();document.getElementById('focus').classList.remove('hasdoc');}
+const _sf=startFocus;startFocus=function(){_sf();if(!focusTopicId)return;focusSeconds=900;renderFocusTimer();mountFocusDoc(focusTopicId);};
 const _ff=finishFocus;finishFocus=function(a){unmountFocusDoc();_ff(a)};
 const _ef=exitFocus;exitFocus=function(){unmountFocusDoc();_ef()};
-
-/* ---------- pull linked PDFs from cloud (keeps any not yet synced) ---------- */
-async function pullNotes(){
- try{
-  const rows=await cloudFetch('revision_notes?select=id,topic_id,file_name,storage_path,size_bytes,created_at&order=created_at.asc');
-  if(!Array.isArray(rows))return;
-  const m={};
-  rows.forEach(r=>(m[r.topic_id]=m[r.topic_id]||[]).push({id:r.id,name:r.file_name,path:r.storage_path,size:r.size_bytes||0,at:r.created_at}));
-  Object.entries(nl()).forEach(([tid,arr])=>arr.filter(n=>n.unsynced).forEach(n=>{const l=(m[tid]=m[tid]||[]);if(!l.some(x=>x.id===n.id))l.push(n)}));
-  data.notes=m;persist();renderTree();if(noteTid)renderNotes();renderPickDocs();
- }catch(e){console.warn('Notes pull:',e)}
-}
-window.addEventListener('online',pullNotes);
-window.addEventListener('load',()=>setTimeout(pullNotes,1500));
-renderTree();
 </script>
-<!-- ===== END ADD-ON ===== -->
 
-<!-- ===== KAUSHAL SYNC FIX v2 =====
-Paste this whole block right before </body>, AFTER "<!-- ===== END ADD-ON ===== -->". Don't delete anything else. -->
+<!-- ===== KAUSHAL SYNC FIX v3 (CACHE-BUSTING + ERROR LOGGING) ===== -->
 <script>
 (function(){
 const pad=n=>String(n).padStart(2,'0');
-const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}; // LOCAL date (IST), not UTC
+const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}; 
 const ms=v=>{const n=typeof v==='number'?v:Date.parse(v);return isNaN(n)?Date.now():n};
 today=()=>dayKey(Date.now());
 addDays=(ds,n)=>{const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return dayKey(d)};
 
-/* ---- clean/migrate stored data ---- */
 function normalize(){
  if(!data||typeof data!=='object')data={};
  ['completed','revisions','changes','notes'].forEach(k=>{if(!data[k]||typeof data[k]!=='object'||Array.isArray(data[k]))data[k]={}});
@@ -615,7 +503,6 @@ function normalize(){
  if(Array.isArray(data.removed)){data.removed.forEach(t=>{if(!data.completed[t])data.changes[t]=Date.now()});delete data.removed}
 }
 
-/* ---- sync engine: pending changes + newest-wins merge ---- */
 const page=async p=>{let o=[],off=0;for(;;){const r=await cloudFetch(p+(p.includes('?')?'&':'?')+'limit=1000&offset='+off)||[];o=o.concat(r);if(r.length<1000)return o;off+=1000}};
 async function pull(){
  const p=await page('topic_progress?select=topic_id,completed,completed_at,updated_at&order=topic_id.asc');
@@ -623,18 +510,18 @@ async function pull(){
  const ch=data.changes,seen=new Set();
  p.forEach(x=>{
   seen.add(x.topic_id);
-  if(ch[x.topic_id]&&ch[x.topic_id]>ms(x.updated_at))return;      // my unsynced change is newer: keep it
+  if(ch[x.topic_id]&&ch[x.topic_id]>ms(x.updated_at))return;      
   delete ch[x.topic_id];
   if(x.completed){const at=ms(x.completed_at||x.updated_at);data.completed[x.topic_id]={at,date:dayKey(at)}}
   else delete data.completed[x.topic_id];
  });
- Object.entries(data.completed).forEach(([t,v])=>{if(!seen.has(t)&&!ch[t])ch[t]=v.at}); // done here, never reached cloud
+ Object.entries(data.completed).forEach(([t,v])=>{if(!seen.has(t)&&!ch[t])ch[t]=v.at}); 
  const done=new Set();
  r.forEach(x=>{
   if(done.has(x.topic_id))return;done.add(x.topic_id);
   const at=ms(x.revised_at),l=data.revisions[x.topic_id];
   if(l&&Math.abs(l.at-at)<1500){l.synced=true;return}
-  if(l&&l.at>at)return;                                           // local revision is newer: keep, push later
+  if(l&&l.at>at)return;                                           
   data.revisions[x.topic_id]={at,date:dayKey(at),synced:true};
  });
 }
@@ -660,24 +547,28 @@ async function notes(){
   for(const n of arr.filter(x=>x.unsynced)){await cloudFetch('revision_notes?on_conflict=id',{method:'POST',body:JSON.stringify([{id:n.id,topic_id:tid,subject:t.subject,group_name:t.group,topic_name:t.name,file_name:n.name,storage_path:n.path,size_bytes:0}])});delete n.unsynced}}
  const rows=await page('revision_notes?select=id,topic_id,file_name,storage_path,size_bytes,created_at&order=created_at.asc');
  const m={};rows.forEach(r=>(m[r.topic_id]=m[r.topic_id]||[]).push({id:r.id,name:r.file_name,path:r.storage_path,size:r.size_bytes||0,at:r.created_at}));
+ Object.entries(nl()).forEach(([tid,arr])=>arr.filter(n=>n.unsynced).forEach(n=>{const l=(m[tid]=m[tid]||[]);if(!l.some(x=>x.id===n.id))l.push(n)}));
  data.notes=m;persist();
 }
 let q=Promise.resolve(),last=0;
-function sync(){return q=q.then(async()=>{           // one sync at a time: nothing is dropped while a request is in flight
+function sync(){return q=q.then(async()=>{
  try{cloudStatus('☁ Syncing…');await pull();await push();await notes();last=Date.now();persist();renderAll();renderPick();cloudStatus('✓ Cloud synced','ok')}
- catch(e){console.warn('Sync:',e);cloudStatus('Cloud unavailable • saved locally','bad')}
+ catch(e){
+   console.warn('Sync:',e);
+   let msg = 'Cloud unavailable • saved locally';
+   try { const err = JSON.parse(e.message); if(err.message) msg = 'DB Error: ' + err.message.slice(0, 40); } catch(err2){}
+   cloudStatus(msg,'bad');
+ }
 })}
-window.cloudSync=sync;cloudPull=cloudPush=pullNotes=sync;
-scheduleCloud=()=>{clearTimeout(cloudTimer);cloudTimer=setTimeout(sync,600)};
+window.cloudSync=sync;
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!document.getElementById('focus').classList.contains('on')&&Date.now()-last>20000)sync()});
 
-/* ---- actions that now record a timestamped change ---- */
 toggleTopic=function(tid){
  if(data.completed[tid]){delete data.completed[tid];data.activity=data.activity.filter(a=>!(a.type==='covered'&&a.tid===tid));toast('Topic marked incomplete')}
  else{const at=Date.now();data.completed[tid]={at,date:today()};data.activity.unshift({type:'covered',tid,date:today(),at});toast('✓ Topic counted for today')}
  data.changes[tid]=Date.now();save();renderAll();
 };
-delNote=function(nid){
+delNote=async function(nid){
  const a=data.notes[noteTid]||[],n=a.find(x=>x.id===nid);
  if(!n||!confirm('Remove "'+n.name+'" from this topic on all devices? (Your Drive file is not deleted.)'))return;
  data.notes[noteTid]=a.filter(x=>x.id!==nid);if(!n.unsynced)data.noteDel.push(nid);
@@ -695,7 +586,6 @@ importData=function(e){
  r.readAsText(f);
 };
 
-/* ---- stats / week now use local dates and synced data ---- */
 const activeDays=()=>{const s=new Set();Object.values(data.completed).forEach(v=>s.add(v.date));Object.values(data.revisions).forEach(v=>s.add(v.date));data.activity.forEach(a=>{if(a.type==='revision'||data.completed[a.tid])s.add(a.date)});return s};
 stats=function(){
  const $=i=>document.getElementById(i),ids=new Set(TOPICS.map(t=>t.id)),total=TOPICS.length,t=today();
@@ -703,7 +593,7 @@ stats=function(){
  $('todayCount').textContent=Object.values(data.completed).filter(v=>v.date===t).length;
  $('totalCount').textContent=done+'/'+total;
  $('revisionCount').textContent=Object.keys(data.revisions).length;
- const s=activeDays();let d=new Date(),n=0;if(!s.has(dayKey(d)))d.setDate(d.getDate()-1);   // streak isn't lost just because today hasn't started
+ const s=activeDays();let d=new Date(),n=0;if(!s.has(dayKey(d)))d.setDate(d.getDate()-1); 
  while(s.has(dayKey(d))&&n<3650){n++;d.setDate(d.getDate()-1)}
  $('streak').textContent=n;const p=total?Math.round(done/total*100):0;$('heroPct').textContent=p+'\%';$('heroBar').style.width=p+'%';
 };
@@ -715,7 +605,6 @@ renderWeek=function(){
  document.getElementById('week').innerHTML=h;document.getElementById('weekTotal').textContent=tot+' activities';
 };
 
-/* ---- search: hide empty subjects, auto-open groups so ticking doesn't collapse them ---- */
 const _rt3=renderTree;
 renderTree=function(){
  _rt3();const el=document.getElementById('tree');
@@ -726,7 +615,6 @@ renderTree=function(){
  }
 };
 
-/* ---- restore the drawn topic after a reload (focus used to start on a topic you couldn't see) ---- */
 function renderPick(){
  const t=data.current&&TOPICS.find(x=>x.id===data.current);if(!t)return;
  document.getElementById('pick').textContent=t.name;
@@ -735,9 +623,10 @@ function renderPick(){
  renderPickDocs();
 }
 normalize();persist();renderAll();renderPick();
+window.addEventListener('online',sync);
+window.addEventListener('load',()=>setTimeout(sync,700));
 })();
 </script>
-<!-- ===== END SYNC FIX v2 ===== -->
 
 </body>
 </html>
