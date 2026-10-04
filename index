@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>KAUSHAL • Study Focus</title>
+<style>
+:root{
+ --bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#6b7280;--line:#e5e7eb;
+ --accent:#4f46e5;--accent2:#7c3aed;--good:#059669;--warn:#d97706;--danger:#dc2626;
+ --shadow:0 12px 35px rgba(15,23,42,.08);--r:20px
+}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}button{cursor:pointer;border:0}
+.app{max-width:1180px;margin:auto;padding:18px 16px 100px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.brand{font-weight:900;font-size:20px;letter-spacing:-.5px}.brand span{color:var(--accent)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:10px 14px;border-radius:12px;background:#fff;border:1px solid var(--line);font-weight:700;color:var(--text)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.danger{background:#fee2e2;color:#991b1b}
+.hero{background:linear-gradient(135deg,#111827,#312e81 55%,#6d28d9);color:white;border-radius:28px;padding:26px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;width:190px;height:190px;border:35px solid rgba(255,255,255,.07);border-radius:50%;right:-50px;top:-70px}
+.hero h1{margin:0 0 7px;font-size:clamp(26px,5vw,42px);letter-spacing:-1.5px}.hero p{margin:0;color:#dbeafe;max-width:720px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:15px 0}.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:var(--shadow)}.stat b{font-size:27px;display:block}.stat small{color:var(--muted)}
+.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:15px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}.card h2{margin:0 0 12px;font-size:18px}.sectionhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.search{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:13px;background:#fafafa;margin-bottom:10px}
+.tree details{border:1px solid var(--line);border-radius:14px;margin:7px 0;background:#fff}.tree summary{list-style:none;padding:12px;cursor:pointer;font-weight:800;display:flex;align-items:center;gap:8px}.tree summary::-webkit-details-marker{display:none}
+.node{padding:0 10px 10px}.topic{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:10px}.topic:hover{background:#f8fafc}.topic label{flex:1;font-size:14px}.topic input{accent-color:var(--good);width:18px;height:18px}.tag{font-size:10px;background:#eef2ff;color:#4338ca;padding:3px 7px;border-radius:999px;font-weight:800}
+.progress{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+.lottery{min-height:300px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.lottery .emoji{font-size:42px}.picked{font-size:24px;font-weight:900;margin:10px 0;max-width:450px}.meta{color:var(--muted);font-size:13px}.timer{font-size:62px;font-weight:900;letter-spacing:2px;margin:10px}.cool{background:#fff7ed;color:#9a3412;padding:7px 10px;border-radius:9px;font-size:12px;margin-top:6px}
+.daybar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}.day{padding:9px 3px;text-align:center;border-radius:10px;background:#f8fafc;font-size:11px}.day b{display:block;font-size:15px}.day.done{background:#dcfce7;color:#166534}
+.log{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}.empty{color:var(--muted);padding:18px 0;text-align:center}
+.focus{position:fixed;inset:0;background:#080b13;color:#fff;z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}.focus.on{display:flex}.focusbox{width:min(700px,100%);text-align:center}.focus h1{font-size:clamp(30px,7vw,54px);margin:0}.focus .focusTimer{font-size:clamp(70px,18vw,150px);font-weight:900;line-height:1;margin:25px 0}.focus p{color:#aeb7c8}.focus button{margin:5px}.focusWarning{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#7f1d1d;padding:10px 14px;border-radius:12px;display:none}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:11px 16px;border-radius:12px;display:none;z-index:10000;box-shadow:var(--shadow)}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.app{padding:12px 10px 90px}.hero{padding:22px}.actions{justify-content:flex-end}}
+@media(max-width:500px){.top{align-items:flex-start}.grid{gap:8px}.stat{padding:13px}.stat b{font-size:22px}.card{padding:14px}.btn{padding:9px 11px}}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="top">
+  <div class="brand">KAUSHAL <span>• STUDY FOCUS</span></div>
+  <div class="actions">
+   <button class="btn" onclick="exportData()">Export</button>
+   <button class="btn" onclick="document.getElementById('importFile').click()">Import</button>
+   <input id="importFile" type="file" accept=".json" hidden onchange="importData(event)">
+  </div>
+ </div>
+
+ <section class="hero">
+  <h1>Study. Track. Revise.</h1>
+  <p>Your distraction-resistant CGPSC study dashboard. Tick topics as you cover them, then use the 10-minute revision lottery to keep older topics alive.</p>
+  <div style="margin-top:17px;max-width:520px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Overall syllabus coverage</span><b id="heroPct">0%</b></div><div class="progress" style="background:rgba(255,255,255,.18)"><i id="heroBar" style="width:0%;background:#fff"></i></div></div>
+ </section>
+
+ <div class="grid">
+  <div class="stat"><b id="todayCount">0</b><small>Topics covered today</small></div>
+  <div class="stat"><b id="totalCount">0</b><small>Total topics completed</small></div>
+  <div class="stat"><b id="revisionCount">0</b><small>Revisions completed</small></div>
+  <div class="stat"><b id="streak">0</b><small>Study-day streak</small></div>
+ </div>
+
+ <div class="layout">
+  <section class="card">
+   <div class="sectionhead"><h2>📚 Hierarchical Syllabus</h2><span class="tag">CGPSC</span></div>
+   <input class="search" id="search" placeholder="Search subject or topic..." oninput="renderTree()">
+   <div id="tree" class="tree"></div>
+  </section>
+
+  <aside>
+   <section class="card lottery">
+    <div class="emoji">🎟️</div>
+    <h2>10-Minute Revision Lottery</h2>
+    <div id="pick" class="picked">Ready when you are</div>
+    <div id="pickMeta" class="meta">Eligible topics are selected randomly.</div>
+    <div id="cooldown" class="cool"></div>
+    <button class="btn primary" style="margin-top:15px" onclick="drawTopic()">🎲 Draw Random Topic</button>
+    <button class="btn" id="focusBtn" style="margin-top:5px" onclick="startFocus()">🔒 Start 10-Min Focus</button>
+   </section>
+
+   <section class="card" style="margin-top:15px">
+    <div class="sectionhead"><h2>📅 Last 7 Study Days</h2><span id="weekTotal" class="tag">0 topics</span></div>
+    <div id="week" class="daybar"></div>
+   </section>
+
+   <section class="card" style="margin-top:15px">
+    <div class="sectionhead"><h2>🕘 Recent Activity</h2><button class="btn" onclick="clearActivity()">Clear</button></div>
+    <div id="activity"></div>
+   </section>
+  </aside>
+ </div>
+</div>
+
+<div id="focus" class="focus" aria-hidden="true">
+ <div class="focusbox">
+  <div style="font-size:14px;letter-spacing:2px;color:#9ca3af">STRICT STUDY FOCUS</div>
+  <h1 id="focusTopic">Revision</h1>
+  <div class="focusTimer" id="focusTimer">10:00</div>
+  <p>Stay on this screen until the timer ends. Switching tabs will trigger a warning and pause the session.</p>
+  <button class="btn primary" onclick="finishFocus()">✓ Complete Revision</button>
+  <button class="btn" onclick="exitFocus()">Exit</button>
+ </div>
+ <div id="focusWarning" class="focusWarning">⚠️ Stay in Focus Mode — timer paused.</div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const SYLLABUS = [
+ {name:"Paper 01 • General Studies",children:[
+  {name:"Chhattisgarh History & Independence Movement",topics:["History of Chhattisgarh","Role of Chhattisgarh in the Independence Movement"]},
+  {name:"Chhattisgarh Geography & Environment",topics:["Geography","Environment","Physical Directions","Census","Archaeology","Tourist Places of Chhattisgarh"]},
+  {name:"History, Music, Dance, Art & Culture",topics:["History, Music, Dance, Art and Culture","Riddles and Proverbs","Local Proverbs of Chhattisgarh"]},
+  {name:"Tribes, Traditions & Festivals",topics:["Tribal traditions","Special traditions","Festivals of Chhattisgarh"]},
+  {name:"Chhattisgarh Economy, Forest & Agriculture",topics:["Economy of Chhattisgarh","Forest of Chhattisgarh","Agriculture of Chhattisgarh"]},
+  {name:"Administration & Panchayati Raj",topics:["Administrative Setup","Local Administration","Panchayati Raj"]},
+  {name:"Industries, Energy, Water & Minerals",topics:["Industries","Energy","Water Resources","Mineral Resources"]},
+  {name:"Current Affairs",topics:["Current Affairs of Chhattisgarh"]}
+ ]},
+ {name:"Paper 01 • Language",children:[
+  {name:"General Hindi",topics:["Comprehension & Understanding","Précis Writing","Synonyms & Antonyms","Homonyms and meanings","Meaningful words for a phrase","Vocabulary and usage","Compound words and separation","Sanskrit-derived words","Word and sentence correction","Prefixes and suffixes","Proverbs: meaning and use","Letter writing","History of Hindi literature","Writers of Chhattisgarh and their works"]},
+  {name:"General English",topics:["Comprehension","Précis Writing","Rearrangement and correction of sentences","Synonyms and Antonyms","Filling the blanks","Spelling correction","Vocabulary and usage","Idioms and Phrases","Tenses","Prepositions","Active and Passive Voice","Parts of Speech","English to Hindi Translation","Letter Writing"]},
+  {name:"Chhattisgarhi",topics:["Chhattisgarhi language","History and development","Chhattisgarhi literature and laureates","Chhattisgarhi grammar","Hindi to Chhattisgarhi translation","Chhattisgarhi to Hindi translation","Administrative Dictionary"]}
+ ]},
+ {name:"Paper 01 • Intelligence & Reasoning",children:[
+  {name:"Intelligence & Analytical Ability",topics:["Communication Skills and Mutual Skills","Logical reasoning and ability to analyze","Decision making","Development and Problem Solving","General Mental Ability","Basic Statistical Works / General Mathematics Ability (Class X)","Analysis of numbers","Charts","Underlines","Tables"]}
+ ]},
+ {name:"Paper 02 • Chemistry",children:[
+  {name:"Chemical Reactions & Equilibrium",topics:["Rate of chemical reaction","Fast and slow chemical reactions","Reversible and irreversible reactions","Dynamic nature of equilibrium","Acids and bases","pH scale and simple numericals","Exothermic and endothermic reactions"]},
+  {name:"Important Chemical Compounds",topics:["Water","Washing soda","Baking soda","Bleaching powder","Plaster of Paris","Lime","Cement","Glass","Steel"]},
+  {name:"Metals & Metallurgy",topics:["Position of metals in periodic table","General properties of metals","Mineral and ore","Difference between mineral and ore","Concentration of ores","Roasting","Smelting","Refining","Metallurgy of copper","Metallurgy of iron","Corrosion","Alloys"]},
+  {name:"Nonmetals & Organic Compounds",topics:["Position of nonmetals","Hydrogen","Oxygen","Nitrogen","Alcohol","Acetic acid","Polythene","PVC","Teflon","Soap","Detergents"]}
+ ]},
+ {name:"Paper 02 • Physics",children:[
+  {name:"Energy",topics:["Conventional and new sources of energy","Solar energy","Origin of energy in the Sun","Solar heating devices","Solar cooker","Solar cell","Wind energy","Biogas","Fossil fuels","Ideal fuel properties","Nuclear energy","Nuclear fission","Nuclear fusion","Chain reaction","Nuclear reactor","Uses and harms of nuclear energy","CREDA"]},
+  {name:"Light & Optics",topics:["Nature of light","Reflection of light","Laws of reflection","Plane mirror","Convex mirror","Concave mirror","Image formation","Focal length and radius of curvature","Concave mirror single-pin method","u-v-f relation and numericals","Refraction","Laws of refraction","Glass slab","Critical angle","Total internal reflection","Applications of TIR","Converging and diverging lenses","Focal length and optical centre","Lens image formation","Human eye and defects","Camera vs human eye","Simple telescope","Astronomical telescope","Ray diagrams"]},
+  {name:"Electricity & Effects",topics:["Electric intensity","Potential","Potential difference","Electric current","Ohm's law","Resistance","Specific resistance","Factors affecting resistance","Combination of resistances","Thermal effect of current","Electric power","Electrical energy","Safety precautions","Chemical effects of electric current","Primary and secondary cells"]},
+  {name:"Magnetism & Discharge",topics:["Leclanché cell","Dry cell","Lead accumulator","Magnetic effect of current","Oersted experiment","Electromagnetic induction","Electric motor","Generator","Alternating and direct current","Electric discharge in gases","Discharge tube","Cathode rays","X-rays","Magnet and types","Artificial magnets","Preparing magnets","Molecular theory of magnetism","Demagnetization","Magnetic keepers","Magnetic lines of force","Terrestrial magnetism","Magnetic storm","Magnetic and geographical meridians","VHI and Ø relation"]}
+ ]},
+ {name:"Paper 02 • Biology",children:[
+  {name:"Nutrition & Digestion",topics:["Types of nutrition","Autotrophic nutrition","Heterotrophic nutrition","Holozoic nutrition","Parasitic nutrition","Saprophytic nutrition","Symbiotic nutrition","Insectivorous nutrition","Nutrition terminology","Amoeba digestion","Grasshopper digestion","Human digestive system","Digestive process"]},
+  {name:"Photosynthesis & Respiration",topics:["Photosynthesis","Amino acid metabolism","Light reaction","Dark reaction","Factors affecting photosynthesis","Photosynthesis experiments","Respiration","Respiratory organs","Breathing and respiration","Aerobic respiration","Anaerobic respiration","Human respiratory system","Mechanism of respiration","Respiratory quotient"]},
+  {name:"Transport, Blood & Excretion",topics:["Transport of mineral and water","Composition of blood","Functions of blood","Heart structure and working","Blood vessels","Blood coagulation","Blood groups","Blood transfusion","Blood bank","Lymph system","Heart-related diseases","Plant excretion","Animal excretion","Human excretory system","Dialysis","Osmoregulation","Kidney diseases"]},
+  {name:"Control, Coordination & Reproduction",topics:["Plant coordination","Phytohormones","Human nervous system","Brain","Spinal cord","Reflex action","Endocrine glands","Hormones and functions","Asexual reproduction","Fission","Budding","Regeneration","Vegetative reproduction","Layering","Cutting","Grafting","Parthenogenesis","Sexual reproduction in plants","Flower structure","Pollination","Fertilization","Human reproductive system","Human reproduction"]},
+  {name:"Heredity & Evolution",topics:["Heredity and variation","Chromosomes","DNA","Genes","Sex determination","Organic evolution","Oparin's theory"]}
+ ]},
+ {name:"Paper 02 • Technology",children:[
+  {name:"Science & Technology Policy",topics:["National policy of science and technology","Changes in policy over time","Purpose of technology"]},
+  {name:"Space Programme",topics:["India's space programme","Industrial applications","Agricultural applications","Rural development applications","INSAT","IRS"]},
+  {name:"Information Technology",topics:["IT in rural India","Computer basics","Computers in communication","Broadcasting","Software development for economic growth","Broad applications of IT"]},
+  {name:"Energy & Agricultural Science",topics:["Energy demands","Renewable energy","Nonrenewable energy","Energy development and utilization in India","Current science and technology developments","Origin of agriculture","Progress of agricultural science","Impacts of agricultural science","Crop science in India","Fertilizers","Pest and disease control in India"]}
+ ]},
+ {name:"Paper 02 • Environment",children:[
+  {name:"Biodiversity & Conservation",topics:["Biodiversity definition","Species diversity","Genetic diversity","Biogeographic classification of India","Importance of biodiversity","Constructive and destructive applications","Social and moral vision","Global, national and local biodiversity","India as a biodiverse nation","Biodiversity hotspots","Threats to biodiversity","Habitat damage","Wildlife damage","Human-wildlife conflict","Threatened/endangered species","Local species","Conservation of biodiversity","In-situ conservation","Ex-situ conservation"]},
+  {name:"Environmental Pollution",topics:["Air pollution","Water pollution","Sea pollution","Soil pollution","Noise pollution","Thermal pollution","Nuclear pollution","Solid waste management","Urban solid waste","Industrial solid waste","Causes, effects and control","Human role in pollution control"]},
+  {name:"Disaster Management & Population",topics:["Disaster management","Floods","Earthquakes","Cyclones","Landslides","Human population and environment","Population growth","Population variation among countries","Population explosion","Family welfare programme","Environment and human health"]}
+ ]},
+ {name:"Paper 02 • Agriculture",children:[
+  {name:"Ecology, Resources & Cropping",topics:["Ecology and relevance to man","Natural resources","Sustainable resource management","Conservation","Physical environment and crops","Social environment and crops","Climatic elements","Changing environment and cropping pattern","Environmental pollution hazards to crops, animals and humans","Agro-climatic zones","High-yielding varieties","Short-duration varieties","Multiple cropping","Multistorey cropping","Relay cropping","Intercropping"]},
+  {name:"Crop Production & Forestry Plantations",topics:["Cereals","Pulses","Oilseeds","Fibres","Sugar crops","Commercial crops","Fodder crops","Kharif crops","Rabi crops","Extension forestry","Social forestry","Agroforestry","Natural forests"]},
+  {name:"Weeds & Soils",topics:["Weed characteristics","Weed dissemination","Weed-crop association","Weed multiplication","Cultural weed control","Biological weed control","Chemical weed control","Soil physical properties","Soil chemical properties","Soil biological properties","Soil formation","Indian soil classification","Mineral constituents","Organic constituents","Plant nutrients","Beneficial elements","Soil fertility","Fertilizer use","Integrated nutrient management","Nitrogen losses","Nitrogen-use efficiency in submerged rice","Nitrogen fixation","Phosphorus fixation","Potassium fixation","Problem soils and reclamation"]},
+  {name:"Soil Conservation, Water & Irrigation",topics:["Watershed-based soil conservation","Erosion management","Run-off management","Hilly lands","Foothills","Valley lands","Dryland agriculture","Rainfed agriculture","Water-use efficiency","Irrigation scheduling","Reducing irrigation run-off","Drip irrigation","Sprinkler irrigation","Drainage of waterlogged soils","Irrigation water quality","Industrial effluents and soil/water pollution"]},
+  {name:"Farm Management & Agricultural Economics",topics:["Farm management","Farm planning","Optimum resource use","Budgeting","Farming system economics","Marketing agricultural inputs and outputs","Pricing","Price fluctuations","Cost","Cooperatives","Types and systems of farming","Factors affecting farming systems"]},
+  {name:"Agricultural Extension & Mechanization",topics:["Agricultural extension","Evaluation of extension programmes","Socioeconomic survey","Big farmers","Small farmers","Marginal farmers","Landless agricultural labourers","Farm mechanization","Rural employment","Training extension workers","Lab-to-land programmes"]},
+  {name:"Genetics, Cell Biology & Plant Breeding",topics:["Cell theory","Cell structure","Cell organelles","Cell division","Nucleic acids","Gene structure and function","Laws of heredity","Plant breeding significance","Chromosome structure","Chromosomal aberrations","Linkage","Cross-over","Recombination breeding","Polyploidy","Euploidy","Aneuploidy","Mutation","Micro and macro mutation","Crop improvement","Variation","Components of variation","Heritability","Sterility","Incompatibility","Cytoplasmic inheritance","Sex-linked characters","Sex-influenced characters","Sex-limited characters","History of plant breeding","Selfing","Crossing techniques","Crop origin and evolution","Centres of origin","Law of homologous series","Crop genetic resources","Conservation and utilization","Pure-line selection","Pedigree selection","Mass selection","Recurrent selection","Combining ability","Hybrid vigour","Backcross breeding","Disease resistance","Pest resistance","Interspecific hybridization","Intergeneric hybridization","Biotechnology in plant breeding","Improved varieties","Hybrids","Composites"]},
+  {name:"Seed Technology & Plant Physiology",topics:["Seed technology","Seed production","Seed processing","Public sector seed production","Private sector seed production","Seed marketing","Imbibition","Surface tension","Diffusion","Osmosis","Water absorption","Water translocation","Transpiration","Water economy","Enzymes","Plant pigments","Modern photosynthesis","Aerobic respiration","Non-aerobic respiration","C3, C4 and CAM mechanisms","Carbohydrate metabolism","Protein metabolism","Fat metabolism","Growth and development","Photoperiodism","Vernalization","Auxins","Plant hormones","Plant growth regulators","Seed development","Seed germination","Seed dormancy"]},
+  {name:"Horticulture & Plant Protection",topics:["Fruit crops","Vegetable crops","Flower crops","Climatic requirements","Cultivation practices","Handling and marketing of fruits/vegetables","Preservation methods","Processing techniques and equipment","Nutrition role of fruits and vegetables","Ornamental plants","Lawns and gardens","Plant pests","Plant diseases","Pest and disease classification","Control principles","Biological control","Integrated pest management","Integrated disease management","Epidemiology","Forecasting","Pesticides","Pesticide formulations","Modes of action","Rhizobial inoculant compatibility","Microbial toxins","Storage pests and diseases of cereals and pulses"]},
+  {name:"Food Production & Policy",topics:["Food production trends in India","Food consumption trends","National food policies","International food policies","Production constraints","Procurement constraints","Distribution constraints","Processing constraints","Dietary pattern","Calorie deficiency","Protein deficiency"]}
+ ]},
+ {name:"Paper 02 • Forestry",children:[
+  {name:"Silviculture",topics:["General silviculture","Silvicultural systems","Mangrove silviculture","Cold desert silviculture","Silviculture of trees"]},
+  {name:"Forestry Systems & Community Forestry",topics:["Agroforestry","Social forestry","Joint Forest Management","Tribology (as written in source syllabus)"]},
+  {name:"Forest Soil & Watershed",topics:["Forest soil","Soil conservation","Watershed management"]},
+  {name:"Environment & Biodiversity",topics:["Environment conservation","Biodiversity","Pollution"]},
+  {name:"Tree Improvement & Technology",topics:["Tree improvement","Forestry technology"]},
+  {name:"Forest Management",topics:["Forest management","Management systems","Forest working plan"]},
+  {name:"Mensuration, Remote Sensing & Engineering",topics:["Forest mensuration","Remote sensing","Survey","Forest engineering"]},
+  {name:"Forest Ecology & Ethnobotany",topics:["Forest ecology","Ethnobotany"]},
+  {name:"Forest Resources & Protection",topics:["Forest resources utilisation","Forest protection","Wildlife biology"]},
+  {name:"Forest Economics & Legislation",topics:["Forest economics","Forest legislation"]}
+ ]}
+];
+
+const KEY="kaushalStudyFocusV1";
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||{completed:{},revisions:{},activity:[],current:null};
+let focusInterval=null,focusSeconds=600,focusTopicId=null,hidden=false;
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data));scheduleCloud()}
+function id(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function today(){return new Date().toISOString().slice(0,10)}
+function addDays(ds,n){let d=new Date(ds+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function fmtDate(d){return new Date(d+"T12:00:00").toLocaleDateString(undefined,{day:"numeric",month:"short"})}
+function allTopics(){
+ let a=[]; SYLLABUS.forEach(s=>s.children.forEach(c=>c.topics.forEach(t=>a.push({id:id(s.name+"|"+c.name+"|"+t),subject:s.name,group:c.name,name:t}))));
+ return a;
+}
+const TOPICS=allTopics();
+
+function renderTree(){
+ const q=document.getElementById("search").value.toLowerCase().trim();
+ let html="";
+ SYLLABUS.forEach(s=>{
+  let groups=s.children.map(c=>{
+   let topics=c.topics.filter(t=>!q || (s.name+" "+c.name+" "+t).toLowerCase().includes(q));
+   if(q && !topics.length)return "";
+   return `<details><summary>▸ ${esc(c.name)} <span class="tag">${topics.length}</span></summary><div class="node">${
+    topics.map(t=>{let tid=id(s.name+"|"+c.name+"|"+t),done=!!data.completed[tid];return `<div class="topic"><input type="checkbox" ${done?"checked":""} onchange="toggleTopic('${tid}')"><label>${esc(t)}</label>${done?'<span class="tag">DONE</span>':''}</div>`}).join("")
+   }</div></details>`;
+  }).join("");
+  if(!q || html) html+=`<details ${q?"open":""}><summary>▾ ${esc(s.name)}</summary><div class="node">${groups}</div></details>`;
+ });
+ document.getElementById("tree").innerHTML=html||'<div class="empty">No topic found.</div>';
+}
+function esc(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function toggleTopic(tid){
+ if(data.completed[tid]){delete data.completed[tid];toast("Topic marked incomplete");}
+ else{data.completed[tid]={date:today(),at:Date.now()};data.activity.unshift({type:"covered",tid,date:today(),at:Date.now()});toast("✓ Topic counted for today");}
+ save();renderAll();
+}
+function eligibleTopics(){
+ const now=today();
+ return TOPICS.filter(t=>{
+  let r=data.revisions[t.id];
+  return !r || addDays(r.date,10)<=now;
+ });
+}
+function drawTopic(){
+ const pool=eligibleTopics();
+ if(!pool.length){document.getElementById("pick").textContent="No eligible topics right now";document.getElementById("pickMeta").textContent="Every revision topic is currently inside its 10-day cooldown.";return}
+ const t=pool[Math.floor(Math.random()*pool.length)];
+ data.current=t.id;save();
+ document.getElementById("pick").textContent=t.name;
+ document.getElementById("pickMeta").textContent=`${t.subject} • ${t.group}`;
+ document.getElementById("cooldown").textContent="Complete the 10-minute focus to start its 10-day revision cooldown.";
+}
+function startFocus(){
+ if(!data.current){drawTopic(); if(!data.current)return}
+ const t=TOPICS.find(x=>x.id===data.current); if(!t)return;
+ focusTopicId=t.id;focusSeconds=600;hidden=false;
+ document.getElementById("focusTopic").textContent=t.name;
+ document.getElementById("focus").classList.add("on");
+ document.getElementById("focus").setAttribute("aria-hidden","false");
+ renderFocusTimer();
+ clearInterval(focusInterval);
+ focusInterval=setInterval(()=>{if(!hidden){focusSeconds--;renderFocusTimer();if(focusSeconds<=0){clearInterval(focusInterval);finishFocus(true)}}},1000);
+}
+function renderFocusTimer(){let m=Math.floor(focusSeconds/60),s=focusSeconds%60;document.getElementById("focusTimer").textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`}
+function finishFocus(auto=false){
+ if(!focusTopicId)return;
+ clearInterval(focusInterval);
+ const tid=focusTopicId;
+ data.revisions[tid]={date:today(),at:Date.now()};
+ data.activity.unshift({type:"revision",tid,date:today(),at:Date.now()});
+ data.current=null;focusTopicId=null;save();
+ document.getElementById("focus").classList.remove("on");
+ toast(auto?"🎉 10-minute revision completed!":"✓ Revision completed");
+ renderAll();
+}
+function exitFocus(){
+ clearInterval(focusInterval);focusTopicId=null;
+ document.getElementById("focus").classList.remove("on");
+}
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden && document.getElementById("focus").classList.contains("on")){
+  hidden=true;clearInterval(focusInterval);document.getElementById("focusWarning").style.display="block";
+ }else if(!document.hidden && document.getElementById("focus").classList.contains("on")){
+  hidden=false;document.getElementById("focusWarning").style.display="none";
+  focusInterval=setInterval(()=>{if(!hidden){focusSeconds--;renderFocusTimer();if(focusSeconds<=0)finishFocus(true)}},1000);
+ }
+});
+function stats(){
+ const total=TOPICS.length, done=Object.keys(data.completed).length;
+ document.getElementById("todayCount").textContent=Object.values(data.completed).filter(x=>x.date===today()).length;
+ document.getElementById("totalCount").textContent=`${done}/${total}`;
+ document.getElementById("revisionCount").textContent=Object.keys(data.revisions).length;
+ let streak=0,d=new Date();while(true){let ds=d.toISOString().slice(0,10);let n=Object.values(data.completed).some(x=>x.date===ds)||data.activity.some(x=>x.type==="revision"&&x.date===ds);if(!n)break;streak++;d.setDate(d.getDate()-1);if(streak>999)break}
+ document.getElementById("streak").textContent=streak;
+ let pct=total?Math.round(done/total*100):0;document.getElementById("heroPct").textContent=pct+"%";document.getElementById("heroBar").style.width=pct+"%";
+}
+function renderWeek(){
+ const box=document.getElementById("week");let total=0,arr=[];
+ for(let i=6;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);let ds=d.toISOString().slice(0,10);let n=Object.values(data.completed).filter(x=>x.date===ds).length+data.activity.filter(x=>x.type==="revision"&&x.date===ds).length;total+=n;arr.push(`<div class="day ${n?'done':''}"><span>${d.toLocaleDateString(undefined,{weekday:'short'}).slice(0,3)}</span><b>${n}</b><small>${d.getDate()}</small></div>`)}
+ box.innerHTML=arr.join("");document.getElementById("weekTotal").textContent=total+" activities";
+}
+function renderActivity(){
+ const el=document.getElementById("activity");let a=data.activity.slice(0,12);
+ el.innerHTML=a.length?a.map(x=>{let t=TOPICS.find(z=>z.id===x.tid);return `<div class="log"><span>${x.type==="revision"?"🎲":"✓"} ${esc(t?t.name:"Topic")}</span><span>${fmtDate(x.date)}</span></div>`}).join(""):'<div class="empty">No activity yet.</div>';
+}
+function renderAll(){renderTree();stats();renderWeek();renderActivity()}
+function toast(s){let e=document.getElementById("toast");e.textContent=s;e.style.display="block";clearTimeout(window.tt);window.tt=setTimeout(()=>e.style.display="none",1800)}
+function clearActivity(){if(confirm("Clear activity history? Completed topics will remain.")){data.activity=[];save();renderAll()}}
+function exportData(){
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="kaushal-study-backup.json";a.click();URL.revokeObjectURL(a.href)
+}
+function importData(e){
+ const f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{data=JSON.parse(r.result);save();renderAll();toast("✓ Backup imported")}catch(err){alert("Invalid backup file.")}};r.readAsText(f)
+}
+renderAll();
+</script>
+
+<!-- ===== KAUSHAL CLOUD SYNC PATCH ===== -->
+<script>
+const KAUSHAL_CLOUD={
+ url:'https://jxozwhyroherxojhkslg.supabase.co',
+ key:'sb_publishable_zQcr8lTMQnzwyEw5DN4j-w_kdoJfYQj'
+};
+let cloudTimer=null,cloudBusy=false;
+function cloudHeaders(){return {'apikey':KAUSHAL_CLOUD.key,'Authorization':'Bearer '+KAUSHAL_CLOUD.key,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}}
+async function cloudFetch(path,opts={}){
+ const r=await fetch(KAUSHAL_CLOUD.url+'/rest/v1/'+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});
+ if(!r.ok) throw new Error(await r.text());
+ return r.status===204?null:r.json();
+}
+function cloudStatus(text,kind=''){
+ let e=document.getElementById('cloudStatus');
+ if(!e){e=document.createElement('div');e.id='cloudStatus';e.style.cssText='position:fixed;right:14px;bottom:14px;z-index:9998;background:#111827;color:#fff;padding:9px 12px;border-radius:10px;font:12px system-ui;box-shadow:0 8px 25px #0003';document.body.appendChild(e)}
+ e.textContent=text;e.style.background=kind==='ok'?'#047857':kind==='bad'?'#991b1b':'#111827';
+ clearTimeout(window.cloudHide);window.cloudHide=setTimeout(()=>e.style.display='none',2200);e.style.display='block';
+}
+async function cloudPush(){
+ if(cloudBusy)return; cloudBusy=true;
+ try{
+  cloudStatus('☁ Saving to cloud…');
+  const completed=Object.entries(data.completed||{}).map(([topic_id,v])=>({topic_id,completed:true,completed_at:new Date(v.at||Date.now()).toISOString(),updated_at:new Date().toISOString()}));
+  if(completed.length) await cloudFetch('topic_progress?on_conflict=topic_id',{method:'POST',body:JSON.stringify(completed)});
+  const revisions=Object.entries(data.revisions||{}).map(([topic_id,v])=>({topic_id,revised_at:new Date(v.at||Date.now()).toISOString(),next_revision_at:new Date(v.next).toISOString()}));
+  if(revisions.length) await cloudFetch('revision_history',{method:'POST',body:JSON.stringify(revisions)});
+  const d=new Date().toISOString().slice(0,10);
+  const topics=Object.values(data.completed||{}).filter(v=>v.date===d).length;
+  const revisionsToday=Object.values(data.revisions||{}).filter(v=>v.date===d).length;
+  await cloudFetch('daily_activity?on_conflict=activity_date',{method:'POST',body:JSON.stringify([{activity_date:d,topics_covered:topics,revisions_completed:revisionsToday,total_focus_minutes:revisionsToday*10,updated_at:new Date().toISOString()}])});
+  cloudStatus('✓ Cloud synced','ok');
+ }catch(e){console.warn('Cloud sync:',e);cloudStatus('Cloud unavailable • saved locally','bad')}
+ finally{cloudBusy=false}
+}
+function scheduleCloud(){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudPush,900)}
+async function cloudPull(){
+ try{
+  cloudStatus('☁ Syncing…');
+  const p=await cloudFetch('topic_progress?select=topic_id,completed,completed_at,updated_at');
+  const r=await cloudFetch('revision_history?select=topic_id,revised_at,next_revision_at&order=revised_at.desc');
+  if(Array.isArray(p))p.forEach(x=>{if(x.completed)data.completed[x.topic_id]={date:(x.completed_at||'').slice(0,10),at:x.updated_at||new Date().toISOString()};else delete data.completed[x.topic_id]});
+  if(Array.isArray(r)){const latest={};r.forEach(x=>{if(!latest[x.topic_id])latest[x.topic_id]=x});Object.entries(latest).forEach(([id,x])=>{data.revisions[id]={date:(x.revised_at||'').slice(0,10),at:x.revised_at,next:x.next_revision_at}})}
+  localStorage.setItem('kaushalStudyFocusV1',JSON.stringify(data));
+  if(typeof renderAll==='function')renderAll();
+  cloudStatus('✓ Cloud loaded','ok');
+ }catch(e){console.warn('Cloud pull:',e);cloudStatus('Cloud unavailable • local mode','bad')}
+}
+// Replace the existing local-only save function with local save + deferred cloud sync.
+window.save=function(){localStorage.setItem('kaushalStudyFocusV1',JSON.stringify(data));scheduleCloud()};
+window.addEventListener('online',()=>cloudPull());
+window.addEventListener('load',()=>setTimeout(cloudPull,700));
+</script>
+</body>
+</html>
