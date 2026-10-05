@@ -12,7 +12,7 @@
  --shadow:0 12px 35px rgba(15,23,42,.08);--r:20px
 }
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
-button,input,select{font:inherit}button{cursor:pointer;border:0}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
 .app{max-width:1180px;margin:auto;padding:18px 16px 100px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
 .brand{font-weight:900;font-size:20px;letter-spacing:-.5px}.brand span{color:var(--accent)}
@@ -183,7 +183,7 @@ const SYLLABUS = [
 
 const KEY="kaushalStudyFocusV1";
 let data=JSON.parse(localStorage.getItem(KEY)||'null')||{completed:{},revisions:{},activity:[],current:null};
-let focusInterval=null,focusSeconds=600,focusTopicId=null,hidden=false;
+let focusInterval=null,focusSeconds=900,focusTopicId=null,hidden=false;
 
 function save(){localStorage.setItem(KEY,JSON.stringify(data));scheduleCloud()}
 function id(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
@@ -305,7 +305,7 @@ const KAUSHAL_CLOUD={
  key:'sb_publishable_zQcr8lTMQnzwyEw5DN4j-w_kdoJfYQj'
 };
 let cloudTimer=null,cloudBusy=false;
-function cloudHeaders(){return {'apikey':KAUSHAL_CLOUD.key, 'Authorization':'Bearer ' + KAUSHAL_CLOUD.key, 'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}}
+function cloudHeaders(){return {'apikey':KAUSHAL_CLOUD.key,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}}
 
 function cloudStatus(text,kind=''){
  let e=document.getElementById('cloudStatus');
@@ -314,10 +314,9 @@ function cloudStatus(text,kind=''){
  clearTimeout(window.cloudHide);window.cloudHide=setTimeout(()=>e.style.display='none',3000);e.style.display='block';
 }
 
-// CACHE BUSTED FETCH
 async function cloudFetch(path,opts={}){
  const u=new URL(KAUSHAL_CLOUD.url+'/rest/v1/'+path);
- // Rely on 'no-store' instead of URL params to avoid PostgREST filter errors
+ if(!opts.method || opts.method==='GET') u.searchParams.set('_t', Date.now()); 
  const r=await fetch(u.toString(),{...opts, cache:'no-store', headers:{...cloudHeaders(),...(opts.headers||{})}});
  if(!r.ok) throw new Error(await r.text());
  const tx=await r.text();return tx?JSON.parse(tx):null;
@@ -327,14 +326,14 @@ function scheduleCloud(){clearTimeout(cloudTimer);cloudTimer=setTimeout(window.c
 window.save=function(){localStorage.setItem('kaushalStudyFocusV1',JSON.stringify(data));scheduleCloud()};
 </script>
 
-<!-- ===== KAUSHAL REVISION NOTES (GOOGLE DRIVE) ADD-ON ===== -->
+<!-- ===== KAUSHAL HTML REVISION NOTES ADD-ON ===== -->
 <style>
 .notebtn{margin-left:auto;background:#f3f4f6;color:#374151;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:800;white-space:nowrap}
 .notebtn.has{background:#dcfce7;color:#166534}
 .ntag{background:#ecfdf5!important;color:#047857!important}
 .nmodal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9000;display:none;align-items:center;justify-content:center;padding:14px}
 .nmodal.on{display:flex}
-.nbox{background:#fff;border-radius:20px;padding:18px;width:min(560px,100%);max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.nbox{background:#fff;border-radius:20px;padding:18px;width:min(600px,100%);max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .nrow{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #e5e7eb}
 .ninfo{flex:1;min-width:0}.ninfo b{display:block;font-size:14px;overflow-wrap:anywhere}.ninfo small{color:#6b7280}
 .pv{position:fixed;inset:0;z-index:9500;background:#080b13;display:none;flex-direction:column}
@@ -342,8 +341,7 @@ window.save=function(){localStorage.setItem('kaushalStudyFocusV1',JSON.stringify
 .pvbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));color:#fff}
 .pvbar b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pvwrap{position:relative;flex:1;min-height:0;border-radius:14px;overflow:hidden;background:#fff;margin:0 10px 10px}
-.pvwrap iframe{width:100%;height:100%;border:0;display:block}
-.pvblock{position:absolute;top:0;right:0;width:64px;height:60px} 
+.pvwrap iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 .pickdocs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
 .focus.hasdoc{align-items:stretch;padding:10px}
 .focus.hasdoc .focusbox{width:100%;height:100%;display:flex;flex-direction:column}
@@ -364,89 +362,146 @@ window.save=function(){localStorage.setItem('kaushalStudyFocusV1',JSON.stringify
    <button class="btn" onclick="closeNotes()">✕</button>
   </div>
   <div id="nList"></div>
-  <div style="display:grid;gap:8px;margin-top:12px">
-   <input id="nName" class="search" style="margin:0" placeholder="Title (optional)">
-   <input id="nLink" class="search" style="margin:0" placeholder="Paste Google Drive PDF link…">
-   <button class="btn primary" onclick="addNote()">＋ Link PDF</button>
+  <div style="display:grid;gap:8px;margin-top:12px;border-top:1px solid #e5e7eb;padding-top:12px;">
+   <input id="nName" class="search" style="margin:0" placeholder="Note Title (e.g., Chapter 1 Notes)">
+   <textarea id="nHtml" class="search" style="margin:0;height:140px;resize:vertical;font-family:monospace;font-size:13px;" placeholder="Paste complete HTML code here..."></textarea>
+   <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;">
+    <span class="meta">Or upload .html file:</span>
+    <input type="file" id="nFile" accept=".html" onchange="handleHtmlFile(event)">
+   </div>
+   <div style="display:flex;gap:8px;">
+    <button id="nSaveBtn" class="btn primary" onclick="saveNote()">＋ Save HTML Note</button>
+    <button id="nCancelBtn" class="btn" style="display:none" onclick="cancelEdit()">Cancel</button>
+   </div>
   </div>
-  <div id="nStatus" class="meta" style="margin-top:8px">In Drive: Share → General access → “Anyone with the link” (Viewer), so it can load here.</div>
  </div>
 </div>
 
-<div id="pdfViewer" class="pv">
- <div class="pvbar"><b id="pvTitle"></b><button class="btn" onclick="closeViewer()">✕ Close</button></div>
- <div class="pvwrap"><iframe id="pvFrame" title="PDF"></iframe><div class="pvblock"></div></div>
+<div id="htmlViewer" class="pv">
+ <div class="pvbar"><b id="hvTitle"></b><button class="btn" onclick="closeViewer()">✕ Close</button></div>
+ <div class="pvwrap"><iframe id="hvFrame" title="HTML Note"></iframe></div>
 </div>
 
 <script>
-const NOTE_BUCKET='revision-notes',NKEY='kaushalStudyFocusV1';
-let noteTid=null,fdTid=null;
+const NKEY='kaushalStudyFocusV1', FOCUS_SECONDS=900;
+let noteTid=null, fdTid=null, editingNid=null;
 const nl=()=>(data.notes=data.notes||{});
 const noteCount=tid=>(nl()[tid]||[]).length;
 const persist=()=>localStorage.setItem(NKEY,JSON.stringify(data));
-const noteUrl=p=>KAUSHAL_CLOUD.url+'/storage/v1/object/public/'+NOTE_BUCKET+'/'+p; 
-const driveId=u=>{u=(u||'').trim();const m=u.match(/\/d\/([\w-]{15,})/)||u.match(/[?&]id=([\w-]{15,})/);return m?m[1]:(/^[\w-]{25,}$/.test(u)?u:null)};
-const docSrc=n=>n.path.includes('/')?noteUrl(n.path):'https://drive.google.com/file/d/'+n.path+'/preview';
-const nMsg=m=>document.getElementById('nStatus').textContent=m;
-
-(function(){
- const q=s=>document.querySelector(s);
- const h=q('.lottery h2');if(h)h.textContent='15-Minute Revision Lottery';
- const b=document.getElementById('focusBtn');if(b)b.textContent='🔒 Start 15-Min Focus';
- const p=q('.hero p');if(p)p.textContent=p.textContent.replace('10-minute revision lottery','15-minute revision lottery');
- const t=document.getElementById('focusTimer');if(t)t.textContent='15:00';
-})();
-const _toast=toast;toast=function(s){_toast(String(s).replace('10-minute','15-minute'))};
 
 const _rt=renderTree;
 renderTree=function(){
- const el=document.getElementById('tree');
- const open=[...el.querySelectorAll('details')].map(d=>d.open);
  _rt();
+ const el=document.getElementById('tree');
  el.querySelectorAll('.topic').forEach(row=>{
   const m=(row.querySelector('input').getAttribute('onchange')||'').match(/'([^']+)'/);if(!m)return;
   const n=noteCount(m[1]);row.dataset.n=n;
-  row.insertAdjacentHTML('beforeend',`<button class="notebtn ${n?'has':''}" onclick="openNotes('${m[1]}')" title="Revision PDFs">📄 ${n||'+'}</button>`);
+  if(!row.querySelector('.notebtn')) {
+      row.insertAdjacentHTML('beforeend',`<button class="notebtn ${n?'has':''}" onclick="openNotes('${m[1]}')" title="HTML Notes">&lt;/&gt; ${n||'+'}</button>`);
+  }
  });
  el.querySelectorAll('.node > details').forEach(g=>{
   const n=[...g.querySelectorAll('.topic')].reduce((a,r)=>a+(+r.dataset.n||0),0);
-  if(n)g.querySelector('summary').insertAdjacentHTML('beforeend',`<span class="tag ntag">📄 ${n}</span>`);
+  if(n && !g.querySelector('.ntag')) g.querySelector('summary').insertAdjacentHTML('beforeend',`<span class="tag ntag">&lt;/&gt; ${n}</span>`);
  });
- if(!document.getElementById('search').value.trim())el.querySelectorAll('details').forEach((d,i)=>{if(open[i])d.open=true});
+ if(document.getElementById('search').value.trim()){
+  [...el.children].forEach(s=>{if(s.tagName==='DETAILS'&&!s.querySelector('.topic'))s.remove()});
+  el.querySelectorAll('details').forEach(d=>d.open=true);
+  if(!el.children.length)el.innerHTML='<div class="empty">No topic found.</div>';
+ }
 };
 
-function openNotes(tid){noteTid=tid;nMsg('In Drive: Share → General access → “Anyone with the link” (Viewer), so it can load here.');document.getElementById('notesModal').classList.add('on');renderNotes()}
-function closeNotes(){document.getElementById('notesModal').classList.remove('on');noteTid=null}
+function openNotes(tid){noteTid=tid;document.getElementById('notesModal').classList.add('on');renderNotes()}
+function closeNotes(){document.getElementById('notesModal').classList.remove('on');noteTid=null;cancelEdit()}
 function renderNotes(){
  const t=TOPICS.find(x=>x.id===noteTid);if(!t)return;
  document.getElementById('nTitle').textContent=t.name;
  document.getElementById('nCrumb').textContent=t.subject+' › '+t.group;
  const a=nl()[noteTid]||[];
- document.getElementById('nList').innerHTML=a.length?a.map(n=>`<div class="nrow"><div class="ninfo"><b>📄 ${esc(n.name)}</b><small>${n.path.includes('/')?'Uploaded file':'Google Drive'}</small></div><button class="btn" onclick="openViewer('${n.id}','${noteTid}')">View</button><button class="btn danger" onclick="delNote('${n.id}')">✕</button></div>`).join(''):'<div class="empty">No PDFs linked to this topic yet.</div>';
+ document.getElementById('nList').innerHTML=a.length?a.map(n=>`<div class="nrow"><div class="ninfo"><b>&lt;/&gt; ${esc(n.name)}</b><small>${n.size} bytes</small></div><button class="btn" onclick="openViewer('${n.id}','${noteTid}')">View</button><button class="btn" onclick="editNote('${n.id}')">Edit</button><button class="btn danger" onclick="delNote('${n.id}')">✕</button></div>`).join(''):'<div class="empty">No HTML notes linked to this topic yet.</div>';
 }
-async function addNote(){
+
+function handleHtmlFile(e) {
+ const f = e.target.files[0];
+ if(!f) return;
+ const r = new FileReader();
+ r.onload = () => {
+  document.getElementById('nHtml').value = r.result;
+  if(!document.getElementById('nName').value) {
+   document.getElementById('nName').value = f.name.replace(/\.html$/i, '');
+  }
+  e.target.value = '';
+ };
+ r.readAsText(f);
+}
+
+async function saveNote(){
  const t=TOPICS.find(x=>x.id===noteTid);if(!t)return;
- const fid=driveId(document.getElementById('nLink').value);
- if(!fid){nMsg('Could not read that link — paste a Google Drive file link (not a folder).');return}
+ const name = document.getElementById('nName').value.trim();
+ const content = document.getElementById('nHtml').value.trim();
+ if(!content) { toast('Please provide HTML content'); return; }
+
  const a=(nl()[t.id]=nl()[t.id]||[]);
- const name=document.getElementById('nName').value.trim()||'PDF note '+(a.length+1);
- const note={id:crypto.randomUUID(),name,path:fid,size:0,at:new Date().toISOString(),unsynced:true};
- a.push(note);persist();
- document.getElementById('nLink').value='';document.getElementById('nName').value='';
- renderTree();renderNotes();renderPickDocs();toast('✓ PDF linked');
+ let note;
+
+ if(editingNid) {
+  note = a.find(x => x.id === editingNid);
+  if(note) {
+   note.name = name || 'HTML Note';
+   note.content = content;
+   note.size = content.length;
+   note.unsynced = true;
+  }
+ } else {
+  note = {
+   id: crypto.randomUUID(),
+   name: name || 'HTML Note ' + (a.length + 1),
+   content: content,
+   size: content.length,
+   at: new Date().toISOString(),
+   unsynced: true
+  };
+  a.push(note);
+ }
+
+ persist();
+ cancelEdit();
+ renderTree(); renderNotes(); renderPickDocs();
+ toast(editingNid ? '✓ Note updated' : '✓ Note saved');
+ 
  try{
-  await cloudFetch('revision_notes',{method:'POST',body:JSON.stringify([{id:note.id,topic_id:t.id,subject:t.subject,group_name:t.group,topic_name:t.name,file_name:name,storage_path:fid,size_bytes:0}])});
-  delete note.unsynced;persist();
- }catch(e){console.warn('Link sync:',e)}
+  await cloudFetch('revision_notes',{method:'POST',body:JSON.stringify([{id:note.id,topic_id:t.id,subject:t.subject,group_name:t.group,topic_name:t.name,file_name:note.name,storage_path:note.content,size_bytes:note.size}])});
+  delete note.unsynced; persist();
+ }catch(e){console.warn('Note sync:',e)}
 }
+
+function editNote(nid) {
+ const a = nl()[noteTid] || [];
+ const n = a.find(x => x.id === nid);
+ if(!n) return;
+ editingNid = nid;
+ document.getElementById('nName').value = n.name;
+ document.getElementById('nHtml').value = n.content;
+ document.getElementById('nSaveBtn').textContent = '✓ Update HTML Note';
+ document.getElementById('nCancelBtn').style.display = 'block';
+}
+
+function cancelEdit() {
+ editingNid = null;
+ document.getElementById('nName').value = '';
+ document.getElementById('nHtml').value = '';
+ document.getElementById('nSaveBtn').textContent = '＋ Save HTML Note';
+ document.getElementById('nCancelBtn').style.display = 'none';
+}
+
 function openViewer(nid,tid){
  const n=(nl()[tid]||[]).find(x=>x.id===nid);if(!n)return;
- document.getElementById('pvTitle').textContent=n.name;
- document.getElementById('pvFrame').src=docSrc(n);
- document.getElementById('pdfViewer').classList.add('on');
+ document.getElementById('hvTitle').textContent=n.name;
+ document.getElementById('hvFrame').srcdoc=n.content;
+ document.getElementById('htmlViewer').classList.add('on');
 }
-function closeViewer(){document.getElementById('pdfViewer').classList.remove('on');document.getElementById('pvFrame').src='about:blank'}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('pdfViewer').classList.contains('on'))closeViewer();else closeNotes()}});
+function closeViewer(){document.getElementById('htmlViewer').classList.remove('on');document.getElementById('hvFrame').srcdoc=''}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('htmlViewer').classList.contains('on'))closeViewer();else if(document.getElementById('notesModal').classList.contains('on'))closeNotes()}});
 
 function renderPickDocs(){
  let el=document.getElementById('pickDocs');
@@ -455,17 +510,19 @@ function renderPickDocs(){
  if(!tid){el.innerHTML='';return}
  const a=nl()[tid]||[];
  el.innerHTML=a.length
-  ?a.map(n=>`<button class="btn" onclick="openViewer('${n.id}','${tid}')">📄 ${esc(n.name)}</button>`).join('')
-  :`<button class="btn" onclick="openNotes('${tid}')">＋ Link a PDF for this topic</button>`;
+  ?a.map(n=>`<button class="btn" onclick="openViewer('${n.id}','${tid}')">&lt;/&gt; ${esc(n.name)}</button>`).join('')
+  :`<button class="btn" onclick="openNotes('${tid}')">＋ Add HTML Note for this topic</button>`;
 }
+
 const _dt=drawTopic;
-drawTopic=function(){_dt();const c=document.getElementById('cooldown');c.textContent=c.textContent.replace('10-minute','15-minute');renderPickDocs();};
+drawTopic=function(){_dt();renderPickDocs();};
 
 function showFocusDoc(i){
  const n=(nl()[fdTid]||[])[i];if(!n)return;
- document.getElementById('fdFrame').src=docSrc(n);
+ document.getElementById('fdFrame').srcdoc=n.content;
  document.querySelectorAll('#focusDoc .ftabs .btn').forEach((b,j)=>b.classList.toggle('on',j===i));
 }
+
 function mountFocusDoc(tid){
  const f=document.getElementById('focus'),box=f.querySelector('.focusbox');
  let btns=box.querySelector('.fbtns');
@@ -474,11 +531,12 @@ function mountFocusDoc(tid){
  const a=nl()[tid]||[];fdTid=tid;
  if(!a.length){f.classList.remove('hasdoc');return}
  const d=document.createElement('div');d.id='focusDoc';
- d.innerHTML=(a.length>1?'<div class="ftabs">'+a.map((n,i)=>`<button class="btn" onclick="showFocusDoc(${i})">${esc(n.name)}</button>`).join('')+'</div>':'')+'<div class="pvwrap"><iframe id="fdFrame" title="Revision PDF"></iframe><div class="pvblock"></div></div>';
+ d.innerHTML=(a.length>1?'<div class="ftabs">'+a.map((n,i)=>`<button class="btn" onclick="showFocusDoc(${i})">${esc(n.name)}</button>`).join('')+'</div>':'')+'<div class="pvwrap"><iframe id="fdFrame" title="HTML Note"></iframe></div>';
  box.appendChild(d);f.classList.add('hasdoc');showFocusDoc(0);
 }
+
 function unmountFocusDoc(){const d=document.getElementById('focusDoc');if(d)d.remove();document.getElementById('focus').classList.remove('hasdoc');}
-const _sf=startFocus;startFocus=function(){_sf();if(!focusTopicId)return;focusSeconds=900;renderFocusTimer();mountFocusDoc(focusTopicId);};
+const _sf=startFocus;startFocus=function(){_sf();if(!focusTopicId)return;focusSeconds=FOCUS_SECONDS;renderFocusTimer();mountFocusDoc(focusTopicId);};
 const _ff=finishFocus;finishFocus=function(a){unmountFocusDoc();_ff(a)};
 const _ef=exitFocus;exitFocus=function(){unmountFocusDoc();_ef()};
 </script>
@@ -521,7 +579,7 @@ async function pull(){
   if(done.has(x.topic_id))return;done.add(x.topic_id);
   const at=ms(x.revised_at),l=data.revisions[x.topic_id];
   if(l&&Math.abs(l.at-at)<1500){l.synced=true;return}
-  if(l&&l.at>at)return;                                           
+  if(l&&l.at>at)return;                                         
   data.revisions[x.topic_id]={at,date:dayKey(at),synced:true};
  });
 }
@@ -544,9 +602,9 @@ async function push(){
 async function notes(){
  for(const nid of [...data.noteDel]){await cloudFetch('revision_notes?id=eq.'+nid,{method:'DELETE'});data.noteDel=data.noteDel.filter(x=>x!==nid)}
  for(const [tid,arr] of Object.entries(data.notes)){const t=TOPICS.find(z=>z.id===tid);if(!t)continue;
-  for(const n of arr.filter(x=>x.unsynced)){await cloudFetch('revision_notes?on_conflict=id',{method:'POST',body:JSON.stringify([{id:n.id,topic_id:tid,subject:t.subject,group_name:t.group,topic_name:t.name,file_name:n.name,storage_path:n.path,size_bytes:0}])});delete n.unsynced}}
+  for(const n of arr.filter(x=>x.unsynced)){await cloudFetch('revision_notes?on_conflict=id',{method:'POST',body:JSON.stringify([{id:n.id,topic_id:tid,subject:t.subject,group_name:t.group,topic_name:t.name,file_name:n.name,storage_path:n.content,size_bytes:n.size}])});delete n.unsynced}}
  const rows=await page('revision_notes?select=id,topic_id,file_name,storage_path,size_bytes,created_at&order=created_at.asc');
- const m={};rows.forEach(r=>(m[r.topic_id]=m[r.topic_id]||[]).push({id:r.id,name:r.file_name,path:r.storage_path,size:r.size_bytes||0,at:r.created_at}));
+ const m={};rows.forEach(r=>(m[r.topic_id]=m[r.topic_id]||[]).push({id:r.id,name:r.file_name,content:r.storage_path,size:r.size_bytes||0,at:r.created_at}));
  Object.entries(nl()).forEach(([tid,arr])=>arr.filter(n=>n.unsynced).forEach(n=>{const l=(m[tid]=m[tid]||[]);if(!l.some(x=>x.id===n.id))l.push(n)}));
  data.notes=m;persist();
 }
@@ -570,7 +628,7 @@ toggleTopic=function(tid){
 };
 delNote=async function(nid){
  const a=data.notes[noteTid]||[],n=a.find(x=>x.id===nid);
- if(!n||!confirm('Remove "'+n.name+'" from this topic on all devices? (Your Drive file is not deleted.)'))return;
+ if(!n||!confirm('Remove "'+n.name+'" from this topic on all devices?'))return;
  data.notes[noteTid]=a.filter(x=>x.id!==nid);if(!n.unsynced)data.noteDel.push(nid);
  persist();renderTree();renderNotes();renderPickDocs();sync();
 };
@@ -605,16 +663,6 @@ renderWeek=function(){
  document.getElementById('week').innerHTML=h;document.getElementById('weekTotal').textContent=tot+' activities';
 };
 
-const _rt3=renderTree;
-renderTree=function(){
- _rt3();const el=document.getElementById('tree');
- if(document.getElementById('search').value.trim()){
-  [...el.children].forEach(s=>{if(s.tagName==='DETAILS'&&!s.querySelector('.topic'))s.remove()});
-  el.querySelectorAll('details').forEach(d=>d.open=true);
-  if(!el.children.length)el.innerHTML='<div class="empty">No topic found.</div>';
- }
-};
-
 function renderPick(){
  const t=data.current&&TOPICS.find(x=>x.id===data.current);if(!t)return;
  document.getElementById('pick').textContent=t.name;
@@ -622,6 +670,7 @@ function renderPick(){
  document.getElementById('cooldown').textContent='Complete the 15-minute focus to start its 10-day revision cooldown.';
  renderPickDocs();
 }
+
 normalize();persist();renderAll();renderPick();
 window.addEventListener('online',sync);
 window.addEventListener('load',()=>setTimeout(sync,700));
